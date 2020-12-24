@@ -1,0 +1,62 @@
+apiVersion : apps/v1
+kind: Deployment
+metadata:
+  name: html-app-tr-deployment
+  labels:
+    app  : html-app-tr
+    env  : test
+    owner: odonici
+spec:
+  selector:
+    matchLabels:
+      app: html-app-tr
+  template:
+    metadata:
+      labels:
+        app: html-app-tr
+    spec:
+      containers:
+        - name : html-app-tr
+          image: kamabullet/html-app-tr:latest
+          ports:
+            - containerPort: 80
+
+---
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: html-app-tr-autoscaling
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v2beta1v1
+    kind: Deployment
+    name: html-app-tr-deployment
+  minReplicas: 2
+  maxReplicas: 4
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      targetAverageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      targetAverageUtilization: 80
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-autoscaling-pod-service
+  labels:
+     env  : test
+     owner: odonici
+spec:
+  selector:
+    app: html-app-tr
+  ports:
+    - name      : http-listener
+      protocol  : TCP
+      port      : 80  # Port on Load Balancer
+      targetPort: 80  # Port on Pod
+  type: LoadBalancer
